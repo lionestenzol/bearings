@@ -21,6 +21,23 @@ def _parse_opts(pairs):
     return out
 
 
+def resolve_loop_roots(loop_root_args, env_value, repo):
+    """Loop-state roots for a --loop / --bookend run, in priority order:
+
+      1. explicit --loop-root values
+      2. $BEARINGS_LOOP_ROOT (os.pathsep-separated, so the bookend hook is zero-arg)
+      3. the repo itself (so --loop always has something to scan)
+
+    Pure + deterministic so the bookend wiring can be unit-tested without a real
+    festival tree. Returns a list (empty only when repo is also falsy)."""
+    roots = [r for r in (loop_root_args or []) if r and r.strip()]
+    if not roots and env_value:
+        roots = [p for p in env_value.split(os.pathsep) if p.strip()]
+    if not roots and repo:
+        roots = [repo]
+    return roots
+
+
 def build_parser():
     p = argparse.ArgumentParser(
         prog="bearings",
@@ -52,6 +69,10 @@ def build_parser():
                    help="also parse loop state (open festivals + mastery capsule + unproven DoD)")
     p.add_argument("--loop-root", action="append", metavar="DIR",
                    help="festival-project root to scan for loop state (repeatable)")
+    p.add_argument("--bookend", action="store_true",
+                   help="loop-bookend preset: turn on --loop and resolve --loop-root from "
+                        "$BEARINGS_LOOP_ROOT, so a session-start / post-fest / post-gw hook "
+                        "is a zero-arg `bearings --bookend`")
     p.add_argument("--version", action="version", version="bearings " + __version__)
     return p
 
@@ -75,9 +96,13 @@ def main(argv=None):
         return 2
 
     # Loop state stays entirely off the --narrate/LLM path: a pure file parse.
-    loop_roots = list(args.loop_root or [])
-    if args.loop and not loop_roots:
-        loop_roots = [args.repo]  # default to scanning the repo itself
+    # --bookend is --loop with zero-arg root discovery (priority: --loop-root,
+    # then $BEARINGS_LOOP_ROOT, then the repo) so the bookend hook needs no flags.
+    want_loop = args.loop or args.bookend
+    loop_roots = []
+    if want_loop:
+        loop_roots = resolve_loop_roots(
+            args.loop_root, os.environ.get("BEARINGS_LOOP_ROOT"), args.repo)
     report = build(args.repo, dates, source=source, base=args.base,
                    extra_generated=tuple(args.generated or ()),
                    loop_roots=loop_roots or None)

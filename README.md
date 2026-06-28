@@ -109,6 +109,25 @@ paying to rebuild it.
 bearings --source claude-code --ledger >/dev/null 2>&1 &
 ```
 
+## Loop bookend
+
+`--loop` adds **loop state** to the digest: open festivals, the newest mastery
+capsule, and the count of unproven `- [ ]` DoD checkboxes across a festival tree.
+`--bookend` is the zero-arg preset — it turns on `--loop` and resolves the tree
+root from `$BEARINGS_LOOP_ROOT` (falling back to the repo), so the same call works
+at **session start** and **after any groundwork/fest run**: "where am I" now
+includes "where did the last verified plan land."
+
+```bash
+export BEARINGS_LOOP_ROOT="$HOME/festival-project"   # once, in your shell profile
+
+bearings --bookend                                   # session start
+bearings --bookend >/dev/null 2>&1 &                 # post-fest / post-gw hook
+```
+
+`--loop-root DIR` (repeatable) overrides the env var; multiple roots can also be
+passed in `$BEARINGS_LOOP_ROOT` separated by the OS path separator (`:` / `;`).
+
 ## Teaching it a new agent
 
 A new session source is a ~40-line subclass:
