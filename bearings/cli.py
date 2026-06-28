@@ -48,6 +48,10 @@ def build_parser():
                    help="append an LLM summary (needs --llm-* or BEARINGS_LLM_* env)")
     p.add_argument("--llm-base-url", default=None, help="OpenAI-compatible base URL")
     p.add_argument("--llm-model", default=None, help="model name for narration")
+    p.add_argument("--loop", action="store_true",
+                   help="also parse loop state (open festivals + mastery capsule + unproven DoD)")
+    p.add_argument("--loop-root", action="append", metavar="DIR",
+                   help="festival-project root to scan for loop state (repeatable)")
     p.add_argument("--version", action="version", version="bearings " + __version__)
     return p
 
@@ -70,8 +74,13 @@ def main(argv=None):
         print(str(e), file=sys.stderr)
         return 2
 
+    # Loop state stays entirely off the --narrate/LLM path: a pure file parse.
+    loop_roots = list(args.loop_root or [])
+    if args.loop and not loop_roots:
+        loop_roots = [args.repo]  # default to scanning the repo itself
     report = build(args.repo, dates, source=source, base=args.base,
-                   extra_generated=tuple(args.generated or ()))
+                   extra_generated=tuple(args.generated or ()),
+                   loop_roots=loop_roots or None)
 
     if args.json:
         print(render_json(report))

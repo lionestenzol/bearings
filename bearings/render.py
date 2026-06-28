@@ -85,6 +85,20 @@ def render_md(report, limit=18):
                      "produced no commits. This is what bearings makes free."
                      % (orient_in / 1e6, orient_in * 100 // tin))
             L.append("")
+
+    # Loop state — open festivals, newest mastery capsule, unproven DoD (zero-LLM)
+    lp = report.loop
+    if lp is not None:
+        L.append("## Loop state")
+        L.append("**%d open festivals** · **%d unproven DoD** (unchecked `- [ ]`)"
+                 % (len(lp.open_festivals), lp.unproven_dod))
+        if lp.newest_capsule:
+            L.append("newest capsule: `%s`" % lp.newest_capsule)
+        else:
+            L.append("newest capsule: _none found_")
+        for fest in lp.open_festivals:
+            L.append("- %s" % fest)
+        L.append("")
     return "\n".join(L)
 
 

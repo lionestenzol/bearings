@@ -66,8 +66,8 @@ def date_range(end_date, days):
             for i in range(days)][::-1]
 
 
-def build(repo, dates, source=None, base="main", extra_generated=()):
-    # type: (str, List[str], SessionSource, str, Sequence[str]) -> Report
+def build(repo, dates, source=None, base="main", extra_generated=(), loop_roots=None):
+    # type: (str, List[str], SessionSource, str, Sequence[str], object) -> Report
     """Assemble a Report from git (+ optional session source). Pure parse."""
     repo = os.path.abspath(repo)
     source = source or NullSource()
@@ -77,6 +77,16 @@ def build(repo, dates, source=None, base="main", extra_generated=()):
 
     commits = git_commits(repo, since, until, extra_generated)
     bs = branch_state(repo, base)
+
+    # Loop state — pure file parse of festival roots, only when asked. Attached the
+    # same way sessions are below; stays entirely off the LLM path (zero-LLM core).
+    loop = None
+    if loop_roots:
+        from .loop import build_loop_state
+        try:
+            loop = build_loop_state(loop_roots)
+        except Exception:
+            loop = None  # a bad festival tree must never sink the git core
 
     try:
         sessions = list(source.iter_sessions(set(dates)))
@@ -95,4 +105,4 @@ def build(repo, dates, source=None, base="main", extra_generated=()):
 
     return Report(repo=repo, dates=list(dates), commits=commits, branch=bs,
                   sessions=sessions, loc=dict(loc), by_type=dict(by_type),
-                  source_name=getattr(source, "name", "none"))
+                  source_name=getattr(source, "name", "none"), loop=loop)

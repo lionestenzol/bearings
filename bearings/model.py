@@ -53,3 +53,4 @@ class Report:
     loc: Dict[str, int] = field(default_factory=dict)        # category -> inserted lines
     by_type: Dict[str, int] = field(default_factory=dict)    # commit type -> count
     source_name: str = "none"
+    loop: Optional["LoopState"] = None                       # zero-LLM loop snapshot (see loop.py)
